@@ -1,0 +1,4 @@
+fitz==0.0.1.dev2
+rapidfuzz==3.7.0
+Requests==2.31.0
+tqdm==4.66.2
