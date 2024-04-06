@@ -1,5 +1,5 @@
-from utils import download_pdf
-from extract import extract_references_from_doc_extract
+from src.refextract.utils import download_pdf
+from src.refextract.extract import extract_references_from_doc_extract
 import os
 import logging
 import fitz
@@ -27,7 +27,7 @@ def ensure_pdfs_are_downloaded(metadata, directory):
             pdf_filename = directory / f"{safe_title}.pdf"
             if not pdf_filename.exists():
                 download_pdf(meta["pdf_url"], pdf_filename)
-            else:                 
+            else:
                 logging.info(f"{pdf_filename} already exists.")
 
 
@@ -71,7 +71,7 @@ def chat_engine(directory):
     response.source_nodes
     print(response)
 
-    
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
@@ -102,7 +102,7 @@ trends [431], [432], [433].
         semantic_scholar_api_key="WWxz8zHVUm6DWzkmw6ZSd3eA94kWbbX46Zl5jR11",
     )
 
-directory = "C:/Users/bayan/Desktop/Github/ResearchLens/src/refextract/pdf_metadata/"
-ensure_pdfs_are_downloaded(metadata, directory)
-chat_engine(directory)
+    directory = "C:/Users/bayan/Desktop/Github/ResearchLens/src/refextract/pdf_metadata/"
+    ensure_pdfs_are_downloaded(metadata, directory)
+    chat_engine(directory)
 
