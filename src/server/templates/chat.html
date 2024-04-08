@@ -46,12 +46,13 @@
                      <!-- Messages will be shown here -->
                   </div>
                   <div class="card-footer">
-                     <form id="messageArea" class="input-group">
-                        <input type="text" id="text" name="msg" placeholder="Type your message..." autocomplete="off" class="form-control type_msg" required/>
+                      <form id="messageArea" class="input-group">
+                        <textarea id="text" name="msg" placeholder="Type your message..." autocomplete="off" class="form-control type_msg" required rows="1"></textarea>
                         <div class="input-group-append">
-                           <button type="submit" id="send" class="input-group-text send_btn"><i class="fas fa-location-arrow"></i></button>
+                            <button type="submit" id="send" class="input-group-text send_btn"><i class="fas fa-location-arrow"></i></button>
                         </div>
-                     </form>
+                      </form>
+
                   </div>
                </div>
             </div>
@@ -82,8 +83,9 @@
       		const minute = date.getMinutes();
       		const str_time = hour+":"+minute;
       		var rawText = $("#text").val();
+                var formattedText = rawText.replace(/\n/g, '<br>');
 
-      		var userHtml = '<div class="d-flex justify-content-end mb-4"><div class="msg_cotainer_send">' + rawText + '<span class="msg_time_send">'+ str_time + '</span></div><div class="img_cont_msg"><img src="https://i.ibb.co/d5b84Xw/Untitled-design.png" class="rounded-circle user_img_msg"></div></div>';
+      		var userHtml = '<div class="d-flex justify-content-end mb-4"><div class="msg_cotainer_send">' + formattedText + '<span class="msg_time_send">'+ str_time + '</span></div><div class="img_cont_msg"><img src="https://i.ibb.co/d5b84Xw/Untitled-design.png" class="rounded-circle user_img_msg"></div></div>';
 
       		$("#text").val("");
       		$("#messageFormeight").append(userHtml);
@@ -136,6 +138,13 @@
            }
        };
        xhr.send(formData);
+      });
+
+      $('#text').keydown(function(event) {
+	if (event.key === 'Enter' && event.shiftKey) {
+	    event.preventDefault(); // Prevent default action
+	    $(this.form).trigger('submit'); // Trigger the submit event
+	}
       });
 
    </script>
