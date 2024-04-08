@@ -6,11 +6,8 @@ import fitz
 from pathlib import Path
 from llama_index.core import (
     SimpleDirectoryReader,
-    load_index_from_storage,
     VectorStoreIndex,
-    StorageContext,
 )
-from IPython.display import Markdown, display
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.cohere import Cohere
@@ -20,6 +17,7 @@ from llama_index.core.memory import ChatMemoryBuffer
 
 def ensure_pdfs_are_downloaded(metadata, directory):
     directory = Path(directory)
+    downloaded_pdfs = []
 
     for meta in metadata:
         if meta and "pdf_url" in meta and meta["pdf_url"]:

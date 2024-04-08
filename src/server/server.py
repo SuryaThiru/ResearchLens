@@ -3,8 +3,12 @@ from werkzeug.utils import secure_filename
 import os
 import tempfile
 
-
 app = Flask(__name__)
+
+# Document
+current_document = None
+
+# Setup the RAG chat engine
 
 
 @app.route("/")
@@ -38,7 +42,7 @@ def upload_pdf():
         return jsonify({"error": "Invalid file type. Only PDFs are allowed."}), 400
 
 
-@app.route("/chat", methods=["POST"])
+@app.route("/get", methods=["POST"])
 def chat():
     msg = request.form["msg"]
     input = msg
