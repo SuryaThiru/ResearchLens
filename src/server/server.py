@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, flash, redirect, render_template, request, jsonify, send_from_directory, url_for
 from werkzeug.utils import secure_filename
 import os
 import tempfile
@@ -11,35 +11,42 @@ current_document = None
 # Setup the RAG chat engine
 
 
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
 @app.route("/")
 def index():
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     return render_template('chat.html')
 
 
-@app.route('/upload_pdf', methods=['POST'])
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+@app.route('/upload', methods=['POST'])
 def upload_pdf():
     # Check if the post request has the file part
-    if 'file' not in request.files:
-        return jsonify({"error": "No file part"}), 400
-    file = request.files['file']
+    if 'pdf_file' not in request.files:
+        flash('No file part')
+        return redirect(request.url)
+    file = request.files['pdf_file']
+    
     # If the user does not select a file, the browser submits an
     # empty file without a filename.
     if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
+        flash('No selected file')
+        return redirect(request.url)
+    
     if file and file.content_type == 'application/pdf':
-        # Create a temporary directory
-        temp_dir = tempfile.mkdtemp()
-        # Secure the filename
         filename = secure_filename(file.filename)
-        # Save file to the temporary directory
-        file_path = os.path.join(temp_dir, filename)
-        file.save(file_path)
-
-        # Put the pdf in a vectorstore
-
-        return jsonify({"message": "File uploaded successfully"}), 200
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return redirect(url_for('index'))
     else:
-        return jsonify({"error": "Invalid file type. Only PDFs are allowed."}), 400
+        flash('Invalid file format')
+        return redirect(request.url)
 
 
 @app.route("/get", methods=["POST"])

@@ -19,14 +19,17 @@
             <!-- Column for PDF Viewer --><!-- Column for PDF Upload and Viewer -->
             <div class="col-md-6" style="padding: 20px;">
                 <div style="margin-bottom: 20px;">
-                    <label for="pdfUpload" class="upload-button">Upload PDF</label>
-                    <input type="file" id="pdfUpload" accept="application/pdf" style="display: none;"/>
-                </div>
-                <div class="pdf-viewer" style="height: 85vh; border-radius: 10px; overflow: hidden;">
-                    <embed id="pdfViewer" type="application/pdf" width="100%" height="100%"></embed>
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        PDF Upload Button
+                        <input type="file" name="pdf_file" id="pdfUpload" accept="application/pdf" />
+                        <input type="button" value="Upload" id="uploadBtn">
+                    </form>
+
+                    <div class="pdf-viewer" style="height: 85vh; border-radius: 10px; overflow: hidden;">
+                        <embed id="pdfViewer" type="application/pdf" width="100%" height="100%"></embed>
+                    </div>
                 </div>
             </div>
-
 
             <!-- Column for Chatbot -->
             <div class="col-md-6 chat">
@@ -34,7 +37,7 @@
                     <div class="card-header msg_head">
                         <div class="d-flex bd-highlight">
                             <div class="img_cont">
-                                <img src="logo1.png" class="rounded-circle user_img">
+                                <img src="{{ url_for('static', filename='logo.webp')}}" class="rounded-circle user_img">
                                 <span class="online_icon"></span>
                             </div>
                             <div class="user_info">
@@ -102,15 +105,39 @@
 				});
 			});
 			 // JavaScript to handle PDF upload and display
-        document.getElementById('pdfUpload').addEventListener('change', function(event) {
-            var file = event.target.files[0];
-            if (file.type === "application/pdf") {
-                var url = URL.createObjectURL(file);
-                document.getElementById('pdfViewer').src = url;
-            } else {
-                alert("Please upload a PDF file.");
-            }
-        });
+document.getElementById('pdfUpload').addEventListener('change', function(event) {
+    var file = event.target.files[0];
+    if (file.type === "application/pdf") {
+        var url = URL.createObjectURL(file);
+        document.getElementById('pdfViewer').src = url;
+    } else {
+        alert("Please upload a PDF file.");
+    }
+});
+
+document.getElementById('uploadBtn').addEventListener('click', function() {
+    var fileInput = document.getElementById('pdfUpload');
+    var file = fileInput.files[0];
+    if (!file) {
+        alert("Please select a file.");
+        return;
+    }
+
+    var formData = new FormData();
+    formData.append('pdf_file', file);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/upload', true);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            console.log('File uploaded successfully.');
+        } else {
+            console.error('Upload failed.');
+        }
+    };
+    xhr.send(formData);
+});
+
 		</script>
         
     </body>

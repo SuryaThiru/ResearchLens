@@ -162,4 +162,4 @@ cython_debug/
 # our stuff
 pdfs/
 storage/
-
+uploads/
