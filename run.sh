@@ -7,7 +7,7 @@
 export FLASK_APP=src/server/server.py
 
 # Enable Flask development mode to activate debugger and reloader
-export FLASK_ENV=development
+# export FLASK_ENV=development
 
 # Start the Flask server
 flask run

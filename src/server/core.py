@@ -8,4 +8,3 @@ def preprocess_chat(doc, text):
         anystyle_url="https://anystyle-webapp.azurewebsites.net/parse",
         semantic_scholar_api_key="WWxz8zHVUm6DWzkmw6ZSd3eA94kWbbX46Zl5jR11",
     )
-
