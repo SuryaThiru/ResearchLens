@@ -177,6 +177,7 @@ def _get_title_from_reftext(
     parsed_data = parsed_data[0]
     title = parsed_data.get("title")
     if title is None:
+        logging.info(f"Title not found in reference text: {reftext}")
         return title
 
     title = " ".join(title)
@@ -221,7 +222,7 @@ def _get_metadata_of_references(
         )
 
         if results.total == 0:
-            logging.warning(f'No metadata found for paper "{ref}"')
+            logging.info(f'No metadata found for paper "{ref}"')
             references_meta.append(None)
             continue
 
@@ -265,6 +266,7 @@ def extract_references_from_doc_extract(
         fuzzy_threshold,
         min_matched_text_len,
     )
+    logging.info(f"Found {len(matched_blocks)} matching text blocks")
     references = _get_references_from_matches(doc, matched_blocks, extract)
 
     # log extracted citations
@@ -283,27 +285,26 @@ if __name__ == "__main__":
 
     datadir = "/home/surya/NEU/CS5100 FAI/Project/pdfreader/"
     file = datadir + "test2.pdf"
+    file = "/home/surya/NEU/CS5100 FAI/Project/ResearchLens/uploads/2311.17902.pdf"
     doc = fitz.open(file)
     extract = """
-    Bradley-Terry model [5], then fine-tune a language model to maximize the given reward using
-reinforcement learning algorithms, commonly REINFORCE [45], proximal policy optimization
-(PPO; [37]), or variants [32]. A closely-related line of work leverages LLMs fine-tuned for instruction
-following with human feedback to generate additional synthetic preference data for targeted attributes
-such as safety or harmlessness [2], using only weak supervision from humans in the form of a
-text rubric for the LLM’s annotations. These methods represent a convergence of two bodies of
-work: one body of work on training language models with reinforcement learning for a variety
-of objectives [33, 27, 46] and another body of work on general methods for learning from human
-preferences [12, 19]. Despite the appeal of using relative human preferences, fine-tuning large
-language models with reinforcement learning remains a major practical challenge; this work provides
-a theoretically-justified approach to optimizing relative preferences without RL.
+Similar to DECOLA Phase 2, we self-
+train baseline on weakly-labeled data. For the self-training
+algorithm, we use online self-training with max-size loss
+from Detic [74] as baseline comparison (baseline + self-
+train) to DECOLA Phase 2. We tested max-size and max-
+score losses from Detic [74] (online pseudo-labeling) as well
+as offline pseudo-labeling similar to DECOLA , and max-size
+loss consistently performed the best.
 
-Describe the Bradley-Terry model.
+What is the Detic model mentioned in this paragraph? What are the novel contributions of the Detic model?
     """
     metadata = extract_references_from_doc_extract(
         doc,
         extract,
         anystyle_url="https://anystyle-webapp.azurewebsites.net/parse",
         semantic_scholar_api_key="WWxz8zHVUm6DWzkmw6ZSd3eA94kWbbX46Zl5jR11",
+        fuzzy_threshold=80,
     )
 
     print("Extracted titles:")

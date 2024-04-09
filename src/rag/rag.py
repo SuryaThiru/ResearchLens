@@ -8,8 +8,10 @@ from llama_index.core import (
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.cohere import Cohere
+from llama_index.embeddings.cohere import CohereEmbedding
 from llama_index.core import Settings
 from llama_index.core.memory import ChatMemoryBuffer
+import cohere
 
 
 def is_exist_in_vector_store_index(index, pdf_file):
@@ -37,12 +39,18 @@ def setup_chat_engine(directory):
     documents = SimpleDirectoryReader(directory).load_data()
     text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=10)
 
-    embed_model = HuggingFaceEmbedding(
-        model_name="sentence-transformers/all-mpnet-base-v2"
+    embed_model = CohereEmbedding(
+        cohere_api_key="vORtxj32na8zl2ceIbxH1c5tNziAVWDdAy2x3sbX",
+        model_name="embed-english-v3.0",  # Supports all Cohere embed models
+        input_type="search_query",  # Required for v3 models
     )
 
     logging.info("Loading LLM model")
-    llm_model = Cohere(api_key="vORtxj32na8zl2ceIbxH1c5tNziAVWDdAy2x3sbX")
+    llm_model = Cohere(
+        model="command-r",
+        api_key="vORtxj32na8zl2ceIbxH1c5tNziAVWDdAy2x3sbX",
+        temperature=0.1,
+    )
 
     Settings.embed_model = embed_model
     Settings.text_splitter = text_splitter
@@ -71,6 +79,52 @@ def setup_chat_engine(directory):
     )
 
     return chat_engine, index
+
+
+def _get_full_text(file_path):
+    documents = SimpleDirectoryReader(input_files=[file_path]).load_data()
+    full_doc_text = "\n".join([doc.text for doc in documents])
+    return full_doc_text
+
+
+def extract_with_llm(original_question, file_path, max_tokens=1000):
+    full_doc_text = _get_full_text(file_path)
+
+    prompt = f"""
+Given the following question about a paper from the user, please provide a brief compilation of texts from the referring paper that can help answer the question.
+
+Question:
+{original_question}
+
+Referring Paper Content:
+{full_doc_text}
+"""
+
+    co = cohere.Client("vORtxj32na8zl2ceIbxH1c5tNziAVWDdAy2x3sbX")
+    response = co.chat(
+        message=prompt,
+        model="command-r",
+        temperature=0.1,
+        max_tokens=max_tokens,
+    )
+
+    answer = response.text
+    return answer
+
+
+def improve_prompt_with_citing_context(
+    original_question, citing_papers, max_tokens=1000
+):
+    citation_context = "Citation Context:\n"
+    for title, file_path in citing_papers:
+        logging.info(f"Adding context of {title} to the prompt.")
+        full_text = extract_with_llm(
+            original_question, file_path, max_tokens=max_tokens
+        )
+        citation_context += f"Paper: {title}\n{full_text}\n"
+
+    prompt = f"{citation_context}\nQuestion: {original_question}"
+    return prompt
 
 
 if __name__ == "__main__":

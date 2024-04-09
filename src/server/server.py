@@ -21,6 +21,7 @@ from src.rag import (
     setup_chat_engine,
     ensure_pdfs_are_downloaded,
     update_vector_store_index,
+    improve_prompt_with_citing_context
 )
 from src.refextract import extract_references_from_doc_extract
 
@@ -103,18 +104,35 @@ def chat():
         anystyle_url="https://anystyle-webapp.azurewebsites.net/parse",
         semantic_scholar_api_key="WWxz8zHVUm6DWzkmw6ZSd3eA94kWbbX46Zl5jR11",
         request_timeout=20,
+        fuzzy_threshold=80,
     )
     metadata = [m for m in metadata if m is not None]
     pdfs = ensure_pdfs_are_downloaded(metadata, UPLOAD_FOLDER)
     app.logger.info(f"Using PDFs: {' '.join(map(str, pdfs))}")
 
-    # update vector store if it does
+    referenced_papers = [m['title'] for m in metadata if m is not None]
+
+    # update vector store if it does not exist
+    for pdf in pdfs:
+        update_vector_store_index(vectordb, pdf)
+
+    # citing papers
+    citing_papers = [(title, pdf) for title, pdf in zip(referenced_papers, pdfs)]
+
+    improved_prompt = improve_prompt_with_citing_context(input, citing_papers)
+    app.logger.info(f"Improved prompt: {improved_prompt}")
 
     # get response from RAG
-    response = chat_engine.chat(input)
+    response = chat_engine.chat(improved_prompt)
 
     app.logger.info(f"Retrieved {len(response.source_nodes)} Source nodes")
     for src in response.source_nodes:
         app.logger.info(src)
 
-    return response.response
+    # Add references to the response
+    referenced_papers = "\n".join(referenced_papers)
+
+    reference_template = f"Referenced papers:\n{referenced_papers}"
+    response = response.response + "\n\n" + reference_template
+
+    return response
