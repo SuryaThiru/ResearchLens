@@ -39,7 +39,7 @@ def setup_chat_engine(directory):
     text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=10)
 
     embed_model = CohereEmbedding(
-        cohere_api_key="MImk1OQjETu9s31ZWNlLtDfrn6bNPG9AJXpTrbfu",
+        cohere_api_key="WctAMtVhT7CeIp35ioPfuNdhbwAXg4S4kKbqWwjO",
         model_name="embed-english-v3.0",  # Supports all Cohere embed models
         input_type="search_query",  # Required for v3 models
     )
@@ -49,7 +49,7 @@ def setup_chat_engine(directory):
         model="command-r",
         api_key="MImk1OQjETu9s31ZWNlLtDfrn6bNPG9AJXpTrbfu",
         temperature=0.1,
-        max_tokens=2000,
+        max_tokens=4000,
     )
 
     Settings.embed_model = embed_model
@@ -61,7 +61,7 @@ def setup_chat_engine(directory):
         documents, embed_model=embed_model, transformations=[text_splitter]
     )
 
-    memory = ChatMemoryBuffer.from_defaults(token_limit=1500)
+    memory = ChatMemoryBuffer.from_defaults(token_limit=1000)
 
     logging.info("Creating chat engine")
     chat_engine = index.as_chat_engine(
@@ -151,20 +151,21 @@ if __name__ == "__main__":
     file = "/home/surya/NEU/CS5100 FAI/Project/ResearchLens/uploads/2311.17902.pdf"
     doc = fitz.open(file)
     extract = """
-The application of LLMs in the field of medicine
-is reshaping healthcare delivery and research. For example,
-LLMs are increasingly used in clinical decision support systems to provide physicians with evidence-based treatment
-recommendations [425], [426], [427]. By analyzing patient
-data and medical literature, they can help identify potential
-diagnoses, suggest appropriate tests, and recommend optimal
-treatment strategies. Moreover, LLMs can also enhance patient
-interactions with healthcare systems; e.g., they can be used
-in chatbot applications [428], [429], [430] to answer patient
-queries about symptoms or medications, schedule appointments, and even provide essential health advice. For medical
-research, LLMs are used to extract and filter information from
-a considerable amount of medical literature, identify relevant
-studies, summarize findings, and even predict future research
-trends [431], [432], [433].
+Direct zero-shot evaluation. For direct zero-shot evaluation,
+we train DECOLA with Swin-T [39] and use Object365 data
+for Phase 1, and ImageNet-21K for Phase 2 (full dataset and
+classes). We compare to MDETR [26], GLIP [34], GroundingDINO [38], and MQ-Det [65] finetuned from GLIP and
+GroundingDINO. Table 4 shows the results. DECOLA outperforms the previous state-of-the-arts, by 12.0/17.1 APrare
+and 3.0/9.4 mAP on LVIS minival and LVIS v1.0 val, respectively. It is noteworthy that all other methods use much
+richer detection labels from GoldG data [26], a collection
+of grounding data (box and text expression pairs) curated
+by MDETR. Furthermore, other benchmark methods show
+highly imbalanced APrare and APf
+in both LVIS minival and
+LVIS v1.0 val (10-20 points gap). We hypothesize that the
+large collection of training data coincides with LVIS vocabulary, as all data follows a natural distribution of common objects.
+
+Highlight some of the key differences between the current paper and the related models MDETR, GLIP, GroudingDINO.
     """
     metadata = extract_references_from_doc_extract(
         doc,

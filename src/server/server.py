@@ -11,6 +11,7 @@ from flask import (
     url_for,
 )
 from werkzeug.serving import is_running_from_reloader
+from huggingface_hub import InferenceClient
 
 import sys
 
@@ -85,6 +86,37 @@ def upload_pdf():
         return redirect(request.url)
 
 
+def _rag_response(input):
+    # get response from RAG
+    response = chat_engine.chat(input)
+
+    # app.logger.info(f"Retrieved {len(response.source_nodes)} Source nodes")
+    # for src in response.source_nodes:
+    #     app.logger.info(src)
+
+    response = response.response
+    return response
+
+def _cohere_response(input):
+    # get response from simple cohere
+    co = cohere.Client("MImk1OQjETu9s31ZWNlLtDfrn6bNPG9AJXpTrbfu")
+    response = co.chat(
+        message=input,
+        model="command-r",
+        temperature=0.1,
+        max_tokens=4000,
+    )
+    response = response.text
+    return response
+
+
+def _llama_response(input):
+  client = InferenceClient(model="https://q7woh0nwl4b6q8xx.us-east-1.aws.endpoints.huggingface.cloud",
+                                token="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")
+  response = client.text_generation(input, max_new_tokens=1000, temperature=0.1)
+  return response
+
+
 @app.route("/get", methods=["POST"])
 def chat():
     msg = request.form["msg"]
@@ -123,24 +155,11 @@ def chat():
     improved_prompt = improve_prompt_with_citing_context(input, citing_papers, main_paper=filepath)
     app.logger.info(f"Improved prompt: {improved_prompt}")
 
-    # get response from RAG
-    # response = chat_engine.chat(improved_prompt)
-    # response = response.response
-    co = cohere.Client("MImk1OQjETu9s31ZWNlLtDfrn6bNPG9AJXpTrbfu")
-    response = co.chat(
-        message=improved_prompt,
-        model="command-r",
-        temperature=0.1,
-        max_tokens=2048,
-    )
-    response = response.text
-
-    # app.logger.info(f"Retrieved {len(response.source_nodes)} Source nodes")
-    # for src in response.source_nodes:
-    #     app.logger.info(src)
+    # get response from chat LLM
+    response = _cohere_response(improved_prompt)
 
     # Add references to the response
-    referenced_papers = "\n".join(referenced_papers)
+    referenced_papers = "\n".join(set(referenced_papers))
 
     reference_template = f"Referenced papers:\n{referenced_papers}"
     response = response + "\n\n" + reference_template

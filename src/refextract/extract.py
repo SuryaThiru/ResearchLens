@@ -288,16 +288,21 @@ if __name__ == "__main__":
     file = "/home/surya/NEU/CS5100 FAI/Project/ResearchLens/uploads/2311.17902.pdf"
     doc = fitz.open(file)
     extract = """
-Similar to DECOLA Phase 2, we self-
-train baseline on weakly-labeled data. For the self-training
-algorithm, we use online self-training with max-size loss
-from Detic [74] as baseline comparison (baseline + self-
-train) to DECOLA Phase 2. We tested max-size and max-
-score losses from Detic [74] (online pseudo-labeling) as well
-as offline pseudo-labeling similar to DECOLA , and max-size
-loss consistently performed the best.
+Direct zero-shot evaluation. For direct zero-shot evaluation,
+we train DECOLA with Swin-T [39] and use Object365 data
+for Phase 1, and ImageNet-21K for Phase 2 (full dataset and
+classes). We compare to MDETR [26], GLIP [34], GroundingDINO [38], and MQ-Det [65] finetuned from GLIP and
+GroundingDINO. Table 4 shows the results. DECOLA outperforms the previous state-of-the-arts, by 12.0/17.1 APrare
+and 3.0/9.4 mAP on LVIS minival and LVIS v1.0 val, respectively. It is noteworthy that all other methods use much
+richer detection labels from GoldG data [26], a collection
+of grounding data (box and text expression pairs) curated
+by MDETR. Furthermore, other benchmark methods show
+highly imbalanced APrare and APf
+in both LVIS minival and
+LVIS v1.0 val (10-20 points gap). We hypothesize that the
+large collection of training data coincides with LVIS vocabulary, as all data follows a natural distribution of common objects.
 
-What is the Detic model mentioned in this paragraph? What are the novel contributions of the Detic model?
+Highlight some of the key differences between the current paper and the related models MDETR, GLIP, GroudingDINO.
     """
     metadata = extract_references_from_doc_extract(
         doc,
