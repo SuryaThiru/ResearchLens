@@ -1,5 +1,6 @@
 import os
 import logging
+import cohere
 from flask import (
     Flask,
     flash,
@@ -113,26 +114,35 @@ def chat():
     referenced_papers = [m['title'] for m in metadata if m is not None]
 
     # update vector store if it does not exist
-    for pdf in pdfs:
-        update_vector_store_index(vectordb, pdf)
+    # for pdf in pdfs:
+    #     update_vector_store_index(vectordb, pdf)
 
     # citing papers
     citing_papers = [(title, pdf) for title, pdf in zip(referenced_papers, pdfs)]
 
-    improved_prompt = improve_prompt_with_citing_context(input, citing_papers)
+    improved_prompt = improve_prompt_with_citing_context(input, citing_papers, main_paper=filepath)
     app.logger.info(f"Improved prompt: {improved_prompt}")
 
     # get response from RAG
-    response = chat_engine.chat(improved_prompt)
+    # response = chat_engine.chat(improved_prompt)
+    # response = response.response
+    co = cohere.Client("MImk1OQjETu9s31ZWNlLtDfrn6bNPG9AJXpTrbfu")
+    response = co.chat(
+        message=improved_prompt,
+        model="command-r",
+        temperature=0.1,
+        max_tokens=2048,
+    )
+    response = response.text
 
-    app.logger.info(f"Retrieved {len(response.source_nodes)} Source nodes")
-    for src in response.source_nodes:
-        app.logger.info(src)
+    # app.logger.info(f"Retrieved {len(response.source_nodes)} Source nodes")
+    # for src in response.source_nodes:
+    #     app.logger.info(src)
 
     # Add references to the response
     referenced_papers = "\n".join(referenced_papers)
 
     reference_template = f"Referenced papers:\n{referenced_papers}"
-    response = response.response + "\n\n" + reference_template
+    response = response + "\n\n" + reference_template
 
     return response

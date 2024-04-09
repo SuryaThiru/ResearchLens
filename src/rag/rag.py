@@ -1,4 +1,3 @@
-from src.refextract.extract import extract_references_from_doc_extract
 import logging
 import fitz
 from llama_index.core import (
@@ -40,7 +39,7 @@ def setup_chat_engine(directory):
     text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=10)
 
     embed_model = CohereEmbedding(
-        cohere_api_key="vORtxj32na8zl2ceIbxH1c5tNziAVWDdAy2x3sbX",
+        cohere_api_key="MImk1OQjETu9s31ZWNlLtDfrn6bNPG9AJXpTrbfu",
         model_name="embed-english-v3.0",  # Supports all Cohere embed models
         input_type="search_query",  # Required for v3 models
     )
@@ -48,8 +47,9 @@ def setup_chat_engine(directory):
     logging.info("Loading LLM model")
     llm_model = Cohere(
         model="command-r",
-        api_key="vORtxj32na8zl2ceIbxH1c5tNziAVWDdAy2x3sbX",
+        api_key="MImk1OQjETu9s31ZWNlLtDfrn6bNPG9AJXpTrbfu",
         temperature=0.1,
+        max_tokens=2000,
     )
 
     Settings.embed_model = embed_model
@@ -100,7 +100,7 @@ Referring Paper Content:
 {full_doc_text}
 """
 
-    co = cohere.Client("vORtxj32na8zl2ceIbxH1c5tNziAVWDdAy2x3sbX")
+    co = cohere.Client("MImk1OQjETu9s31ZWNlLtDfrn6bNPG9AJXpTrbfu")
     response = co.chat(
         message=prompt,
         model="command-r",
@@ -113,8 +113,16 @@ Referring Paper Content:
 
 
 def improve_prompt_with_citing_context(
-    original_question, citing_papers, max_tokens=1000
+    original_question, citing_papers, main_paper=None, max_tokens=1000
 ):
+    if main_paper:
+        file_path = main_paper
+        logging.info(f"Adding context of the main paper to the prompt.")
+        full_text = extract_with_llm(
+            original_question, file_path, max_tokens=max_tokens
+        )
+        main_paper_context = f"Current Paper Context:\n{full_text}\n"
+
     citation_context = "Citation Context:\n"
     for title, file_path in citing_papers:
         logging.info(f"Adding context of {title} to the prompt.")
@@ -124,14 +132,23 @@ def improve_prompt_with_citing_context(
         citation_context += f"Paper: {title}\n{full_text}\n"
 
     prompt = f"{citation_context}\nQuestion: {original_question}"
+
+    if main_paper:
+        prompt = f"{main_paper_context}\n{prompt}"
+
     return prompt
 
 
 if __name__ == "__main__":
+    import sys
+    sys.path.append(".")
+    from src.refextract import extract_references_from_doc_extract
+    from src.rag import ensure_pdfs_are_downloaded, chat_engine
     logging.basicConfig(level=logging.INFO)
 
     datadir = "src/refextract/pdf_metadata/"
     file = datadir + "2307.06435-2.pdf"
+    file = "/home/surya/NEU/CS5100 FAI/Project/ResearchLens/uploads/2311.17902.pdf"
     doc = fitz.open(file)
     extract = """
 The application of LLMs in the field of medicine
