@@ -12,6 +12,26 @@ from llama_index.core import Settings
 from llama_index.core.memory import ChatMemoryBuffer
 
 
+def is_exist_in_vector_store_index(index, pdf_file):
+    for node in index.docstore.docs.values():
+        if node.metadata["file_path"] == pdf_file:
+            return True
+    return False
+
+
+def update_vector_store_index(index, pdf_file):
+    if is_exist_in_vector_store_index(index, pdf_file):
+        logging.info(f"Document {pdf_file} already present in the index. Skipping.")
+        return
+
+    documents = SimpleDirectoryReader(input_files=[pdf_file]).load_data()
+
+    for doc in documents:
+        index.insert(doc)
+
+    logging.info(f"Document {pdf_file} added to the index.")
+
+
 def setup_chat_engine(directory):
     logging.info(f"Loading documents from {directory} directory")
     documents = SimpleDirectoryReader(directory).load_data()
@@ -22,22 +42,25 @@ def setup_chat_engine(directory):
     )
 
     logging.info("Loading LLM model")
-    cohere_model = Cohere(api_key="vORtxj32na8zl2ceIbxH1c5tNziAVWDdAy2x3sbX")
+    llm_model = Cohere(api_key="vORtxj32na8zl2ceIbxH1c5tNziAVWDdAy2x3sbX")
 
     Settings.embed_model = embed_model
     Settings.text_splitter = text_splitter
-    Settings.llm = cohere_model
+    Settings.llm = llm_model
 
     logging.info("Building vector store index")
-    index = VectorStoreIndex.from_documents(documents)
+    index = VectorStoreIndex.from_documents(
+        documents, embed_model=embed_model, transformations=[text_splitter]
+    )
 
     memory = ChatMemoryBuffer.from_defaults(token_limit=1500)
 
     logging.info("Creating chat engine")
     chat_engine = index.as_chat_engine(
+        # chat_mode="condense_plus_context",
         chat_mode="context",
         memory=memory,
-        llm=cohere_model,
+        llm=llm_model,
         context_prompt=(
             "You are a chatbot, able to have normal interactions, as well as explaining research papers."
             "Here are the relevant documents for the context:\n"

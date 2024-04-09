@@ -14,6 +14,7 @@ def ensure_pdfs_are_downloaded(metadata, directory):
             ).rstrip()
             pdf_filename = directory / f"{safe_title}.pdf"
             if not pdf_filename.exists():
+                logging.info(f"Downloading {pdf_filename}...")
                 download_pdf(meta["pdf_url"], pdf_filename)
             else:
                 logging.info(f"{pdf_filename} already exists.")

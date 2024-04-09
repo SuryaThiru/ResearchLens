@@ -6,7 +6,6 @@ from flask import (
     redirect,
     render_template,
     request,
-    jsonify,
     send_from_directory,
     url_for,
 )
@@ -18,14 +17,20 @@ from werkzeug.utils import secure_filename
 
 sys.path.append(".")
 
-from src.rag import setup_chat_engine, ensure_pdfs_are_downloaded
+from src.rag import (
+    setup_chat_engine,
+    ensure_pdfs_are_downloaded,
+    update_vector_store_index,
+)
+from src.refextract import extract_references_from_doc_extract
 
 
 app = Flask(__name__)
-app.logger.setLevel(logging.INFO)
+app.logger.setLevel(level=logging.INFO)
 logging.basicConfig(level=logging.INFO)
 
 UPLOAD_FOLDER = "uploads"
+UPLOAD_FOLDER = os.path.abspath(UPLOAD_FOLDER)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 # Document
@@ -68,7 +73,10 @@ def upload_pdf():
 
     if file and file.content_type == "application/pdf":
         filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+        filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        file.save(filepath)
+
+        update_vector_store_index(vectordb, filepath)
         return redirect(url_for("index"))
     else:
         flash("Invalid file format")
@@ -78,16 +86,35 @@ def upload_pdf():
 @app.route("/get", methods=["POST"])
 def chat():
     msg = request.form["msg"]
-    filename = request.form["filename"]
+    filename = request.form.get("filename")
     input = msg
 
     app.logger.info(f"Received message: {msg} for {filename}")
-    response = chat_engine.chat(input)
+
+    if filename is None or filename == "":
+        response = chat_engine.chat(input)
+        return response.response
 
     # check if text contains references
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    metadata = extract_references_from_doc_extract(
+        filepath,
+        input,
+        anystyle_url="https://anystyle-webapp.azurewebsites.net/parse",
+        semantic_scholar_api_key="WWxz8zHVUm6DWzkmw6ZSd3eA94kWbbX46Zl5jR11",
+        request_timeout=20,
+    )
+    metadata = [m for m in metadata if m is not None]
+    pdfs = ensure_pdfs_are_downloaded(metadata, UPLOAD_FOLDER)
+    app.logger.info(f"Using PDFs: {' '.join(map(str, pdfs))}")
 
     # update vector store if it does
 
     # get response from RAG
+    response = chat_engine.chat(input)
+
+    app.logger.info(f"Retrieved {len(response.source_nodes)} Source nodes")
+    for src in response.source_nodes:
+        app.logger.info(src)
 
     return response.response

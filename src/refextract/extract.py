@@ -174,7 +174,11 @@ def _get_title_from_reftext(
     )
     parsed_data = response.json()
 
-    title = parsed_data[0]["title"]
+    parsed_data = parsed_data[0]
+    title = parsed_data.get("title")
+    if title is None:
+        return title
+
     title = " ".join(title)
 
     assert len(title) >= min_title_len
@@ -208,6 +212,10 @@ def _get_metadata_of_references(
 
     references_meta = []
     for ref in tqdm(references_title, desc="Fetching metadata"):
+        if ref is None:
+            references_meta.append(None)
+            continue
+
         results = sch.search_paper(
             ref, limit=1, fields=["title", "paperId", "externalIds", "openAccessPdf"]
         )
@@ -277,27 +285,19 @@ if __name__ == "__main__":
     file = datadir + "test2.pdf"
     doc = fitz.open(file)
     extract = """
-    We can apply this reparameterization to the ground-truth reward r ∗ and corresponding optimal model
-π∗ . Fortunately, the Bradley-Terry model depends only on the difference of rewards between two
-completions, i.e., p∗(y1 ≻ y2 | x) = σ(r ∗ (x, y1) − r∗ (x, y2 )). Substituting the reparameterization
-in Eq. 5 for r∗ (x, y) into the preference model Eq. 1, the partition function cancels, and we can
-express the human preference probability in terms of only the optimal policy π ∗ and reference policy
-πref . Thus, the optimal RLHF policy π∗ under the Bradley-Terry model satisfies the preference model:
-1
-p∗ (y1 ≻ y2 | x) =
- (6)
-
- π∗
-(y
-2 |x)
- π∗ (y1 |x)
- 
-1 + exp
- β log − β logπref(y2 |x) πref(y1 |x)
-The derivation is in Appendix A.2. While Eq. 6 uses the Bradley-Terry model, we can similarly
-derive expressions under the more general Plackett-Luce models [30, 21], shown in Appendix A.3.
-Now that we have the probability of human preference data in terms of the optimal policy rather than
-the reward model, we can formulate a maximum likelihood objective for a parametrized policy π
+    Bradley-Terry model [5], then fine-tune a language model to maximize the given reward using
+reinforcement learning algorithms, commonly REINFORCE [45], proximal policy optimization
+(PPO; [37]), or variants [32]. A closely-related line of work leverages LLMs fine-tuned for instruction
+following with human feedback to generate additional synthetic preference data for targeted attributes
+such as safety or harmlessness [2], using only weak supervision from humans in the form of a
+text rubric for the LLM’s annotations. These methods represent a convergence of two bodies of
+work: one body of work on training language models with reinforcement learning for a variety
+of objectives [33, 27, 46] and another body of work on general methods for learning from human
+preferences [12, 19]. Despite the appeal of using relative human preferences, fine-tuning large
+language models with reinforcement learning remains a major practical challenge; this work provides
+a theoretically-justified approach to optimizing relative preferences without RL.
+
+Describe the Bradley-Terry model.
     """
     metadata = extract_references_from_doc_extract(
         doc,
