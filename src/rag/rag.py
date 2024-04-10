@@ -11,6 +11,7 @@ from llama_index.embeddings.cohere import CohereEmbedding
 from llama_index.core import Settings
 from llama_index.core.memory import ChatMemoryBuffer
 import cohere
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def is_exist_in_vector_store_index(index, pdf_file):
@@ -124,12 +125,19 @@ def improve_prompt_with_citing_context(
         main_paper_context = f"Current Paper Context:\n{full_text}\n"
 
     citation_context = "Citation Context:\n"
-    for title, file_path in citing_papers:
-        logging.info(f"Adding context of {title} to the prompt.")
-        full_text = extract_with_llm(
-            original_question, file_path, max_tokens=max_tokens
-        )
-        citation_context += f"Paper: {title}\n{full_text}\n"
+
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for title, file_path in citing_papers:
+            logging.info(f"Adding context of {title} to the prompt.")
+            future = executor.submit(
+                extract_with_llm, original_question, file_path, max_tokens=max_tokens
+            )
+            futures.append((title, future))
+
+        for title, future in futures:
+            full_text = future.result()
+            citation_context += f"Paper: {title}\n{full_text}\n"
 
     prompt = f"{citation_context}\nQuestion: {original_question}"
 

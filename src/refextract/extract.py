@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import fitz  # PyMuPDF
 import re
 from rapidfuzz import fuzz
@@ -202,32 +203,43 @@ def _get_metadata_of_references(
     Returns:
         list: A list of dictionaries containing the metadata for each reference.
     """
+
     # get title from reference text
-    references_title = []
-    for reftext in tqdm(references, desc="Extracting titles from references"):
-        title = _get_title_from_reftext(reftext, anystyle_url, request_timeout)
-        references_title.append(title)
+    def _get_title_from_reftext_wrapper(reftext):
+        return _get_title_from_reftext(reftext, anystyle_url, request_timeout)
+
+    with ThreadPoolExecutor() as executor:
+        references_title = list(
+            tqdm(
+                executor.map(_get_title_from_reftext_wrapper, references),
+                total=len(references),
+                desc="Extracting titles from references",
+            )
+        )
 
     # search for the metadata using the paper title
     sch = SemanticScholar(api_key=semantic_scholar_api_key, timeout=request_timeout)
 
-    references_meta = []
-    for ref in tqdm(references_title, desc="Fetching metadata"):
-        if ref is None:
-            references_meta.append(None)
-            continue
-
-        results = sch.search_paper(
-            ref, limit=1, fields=["title", "paperId", "externalIds", "openAccessPdf"]
-        )
+    def _search_paper_wrapper(title):
+        if title is None:
+            return None
+        results = sch.search_paper(title, limit=1, fields=["title", "paperId", "externalIds", "openAccessPdf"])
 
         if results.total == 0:
             logging.info(f'No metadata found for paper "{ref}"')
-            references_meta.append(None)
-            continue
+            return None
 
         meta = results[0]
-        references_meta.append(meta.raw_data)
+        return meta.raw_data
+
+    with ThreadPoolExecutor() as executor:
+        references_meta = list(
+            tqdm(
+                executor.map(_search_paper_wrapper, references_title),
+                total=len(references_title),
+                desc="Fetching metadata",
+            )
+        )
 
     # get the pdf URL of each paper
     for meta in references_meta:
