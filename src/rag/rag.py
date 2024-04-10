@@ -40,7 +40,7 @@ def setup_chat_engine(directory):
     text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=10)
 
     embed_model = CohereEmbedding(
-        cohere_api_key="WctAMtVhT7CeIp35ioPfuNdhbwAXg4S4kKbqWwjO",
+        cohere_api_key="97yMDC0I1r8wa2A1XRKZITRFAlPN4tndAPyZ6L8L",
         model_name="embed-english-v3.0",  # Supports all Cohere embed models
         input_type="search_query",  # Required for v3 models
     )
@@ -48,7 +48,7 @@ def setup_chat_engine(directory):
     logging.info("Loading LLM model")
     llm_model = Cohere(
         model="command-r",
-        api_key="MImk1OQjETu9s31ZWNlLtDfrn6bNPG9AJXpTrbfu",
+        api_key="97yMDC0I1r8wa2A1XRKZITRFAlPN4tndAPyZ6L8L",
         temperature=0.1,
         max_tokens=4000,
     )

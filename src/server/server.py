@@ -23,7 +23,7 @@ from src.rag import (
     setup_chat_engine,
     ensure_pdfs_are_downloaded,
     update_vector_store_index,
-    improve_prompt_with_citing_context
+    improve_prompt_with_citing_context,
 )
 from src.refextract import extract_references_from_doc_extract
 
@@ -36,8 +36,6 @@ UPLOAD_FOLDER = "uploads"
 UPLOAD_FOLDER = os.path.abspath(UPLOAD_FOLDER)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-# Document
-current_document = None
 
 # Setup the RAG chat engine
 # chat_engine, vectordb = setup_chat_engine(UPLOAD_FOLDER)
@@ -97,9 +95,10 @@ def _rag_response(input):
     response = response.response
     return response
 
+
 def _cohere_response(input):
     # get response from simple cohere
-    co = cohere.Client("MImk1OQjETu9s31ZWNlLtDfrn6bNPG9AJXpTrbfu")
+    co = cohere.Client("97yMDC0I1r8wa2A1XRKZITRFAlPN4tndAPyZ6L8L")
     response = co.chat(
         message=input,
         model="command-r",
@@ -111,10 +110,12 @@ def _cohere_response(input):
 
 
 def _llama_response(input):
-  client = InferenceClient(model="https://q7woh0nwl4b6q8xx.us-east-1.aws.endpoints.huggingface.cloud",
-                                token="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")
-  response = client.text_generation(input, max_new_tokens=1000, temperature=0.1)
-  return response
+    client = InferenceClient(
+        model="https://u6al5xke1es2ir4v.us-east-1.aws.endpoints.huggingface.cloud",
+        token="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",
+    )
+    response = client.text_generation(input, max_new_tokens=500, temperature=0.05)
+    return response
 
 
 @app.route("/get", methods=["POST"])
@@ -123,11 +124,20 @@ def chat():
     filename = request.form.get("filename")
     input = msg
 
+    method = request.form.get("contentType", "text")
+    app.logger.info(f"Using {method} model")
+    if method == "text":
+        _chat_response = _cohere_response
+    elif method == "math":
+        _chat_response = _llama_response
+        response = _chat_response(input)
+        return response
+
     app.logger.info(f"Received message: {msg} for {filename}")
 
     if filename is None or filename == "":
-        response = chat_engine.chat(input)
-        return response.response
+        response = _chat_response(input)
+        return response
 
     # check if text contains references
     filepath = os.path.join(UPLOAD_FOLDER, filename)
@@ -143,7 +153,7 @@ def chat():
     pdfs = ensure_pdfs_are_downloaded(metadata, UPLOAD_FOLDER)
     app.logger.info(f"Using PDFs: {' '.join(map(str, pdfs))}")
 
-    referenced_papers = [m['title'] for m in metadata if m is not None]
+    referenced_papers = [m["title"] for m in metadata if m is not None]
 
     # update vector store if it does not exist
     # for pdf in pdfs:
@@ -152,11 +162,13 @@ def chat():
     # citing papers
     citing_papers = [(title, pdf) for title, pdf in zip(referenced_papers, pdfs)]
 
-    improved_prompt = improve_prompt_with_citing_context(input, citing_papers, main_paper=filepath)
+    improved_prompt = improve_prompt_with_citing_context(
+        input, citing_papers, main_paper=filepath
+    )
     app.logger.info(f"Improved prompt: {improved_prompt}")
 
     # get response from chat LLM
-    response = _cohere_response(improved_prompt)
+    response = _chat_response(improved_prompt)
 
     # Add references to the response
     referenced_papers = "\n".join(set(referenced_papers))

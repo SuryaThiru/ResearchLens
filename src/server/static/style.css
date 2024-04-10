@@ -153,7 +153,7 @@ border-radius: 0 0 15px 15px !important;
 	margin-bottom: auto;
 	margin-left: 10px;
 	border-radius: 25px;
-	background-color: rgb(82, 172, 255);
+	background-color: #84CEEB;
 	padding: 10px;
 	position: relative;
 }
@@ -162,7 +162,7 @@ border-radius: 0 0 15px 15px !important;
 	margin-bottom: auto;
 	margin-right: 10px;
 	border-radius: 25px;
-	background-color: #58cc71;
+	background-color: #8EE4AF;
 	padding: 10px;
 	position: relative;
 }
@@ -221,8 +221,8 @@ border-radius: 0 0 15px 15px !important;
 }
 @media(max-width: 576px){
 	.contacts_card{
-	margin-bottom: 15px !important;
-}
+		margin-bottom: 15px !important;
+	}
 }
 
 /* Styling the scrollbar for textarea with ID 'text' */
