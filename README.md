@@ -1,7 +1,7 @@
 <h1 align="center">ResearchLens</h1>
 
 <p align="center">
-  <img src="/home/surya/NEU/CS5100 FAI/Project/ResearchLens/src/server/static/logo.webp" alt="Logo" width=25%>
+  <img src="src/server/static/logo.webp" alt="Logo" width=25%>
   <br>Your paper-reading assistant powered by LLMs.
 </p>
 
