@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import fitz  # PyMuPDF
 import re
 from rapidfuzz import fuzz
@@ -174,7 +175,12 @@ def _get_title_from_reftext(
     )
     parsed_data = response.json()
 
-    title = parsed_data[0]["title"]
+    parsed_data = parsed_data[0]
+    title = parsed_data.get("title")
+    if title is None:
+        logging.info(f"Title not found in reference text: {reftext}")
+        return title
+
     title = " ".join(title)
 
     assert len(title) >= min_title_len
@@ -197,28 +203,43 @@ def _get_metadata_of_references(
     Returns:
         list: A list of dictionaries containing the metadata for each reference.
     """
+
     # get title from reference text
-    references_title = []
-    for reftext in tqdm(references, desc="Extracting titles from references"):
-        title = _get_title_from_reftext(reftext, anystyle_url, request_timeout)
-        references_title.append(title)
+    def _get_title_from_reftext_wrapper(reftext):
+        return _get_title_from_reftext(reftext, anystyle_url, request_timeout)
+
+    with ThreadPoolExecutor() as executor:
+        references_title = list(
+            tqdm(
+                executor.map(_get_title_from_reftext_wrapper, references),
+                total=len(references),
+                desc="Extracting titles from references",
+            )
+        )
 
     # search for the metadata using the paper title
     sch = SemanticScholar(api_key=semantic_scholar_api_key, timeout=request_timeout)
 
-    references_meta = []
-    for ref in tqdm(references_title, desc="Fetching metadata"):
-        results = sch.search_paper(
-            ref, limit=1, fields=["title", "paperId", "externalIds", "openAccessPdf"]
-        )
+    def _search_paper_wrapper(title):
+        if title is None:
+            return None
+        results = sch.search_paper(title, limit=1, fields=["title", "paperId", "externalIds", "openAccessPdf"])
 
         if results.total == 0:
-            logging.warning(f'No metadata found for paper "{ref}"')
-            references_meta.append(None)
-            continue
+            logging.info(f'No metadata found for paper "{ref}"')
+            return None
 
         meta = results[0]
-        references_meta.append(meta.raw_data)
+        return meta.raw_data
+
+    with ThreadPoolExecutor() as executor:
+        references_meta = list(
+            tqdm(
+                executor.map(_search_paper_wrapper, references_title),
+                total=len(references_title),
+                desc="Fetching metadata",
+            )
+        )
 
     # get the pdf URL of each paper
     for meta in references_meta:
@@ -257,6 +278,7 @@ def extract_references_from_doc_extract(
         fuzzy_threshold,
         min_matched_text_len,
     )
+    logging.info(f"Found {len(matched_blocks)} matching text blocks")
     references = _get_references_from_matches(doc, matched_blocks, extract)
 
     # log extracted citations
@@ -275,35 +297,31 @@ if __name__ == "__main__":
 
     datadir = "/home/surya/NEU/CS5100 FAI/Project/pdfreader/"
     file = datadir + "test2.pdf"
+    file = "/home/surya/NEU/CS5100 FAI/Project/ResearchLens/uploads/2311.17902.pdf"
     doc = fitz.open(file)
     extract = """
-    We can apply this reparameterization to the ground-truth reward r ∗ and corresponding optimal model
-π∗ . Fortunately, the Bradley-Terry model depends only on the difference of rewards between two
-completions, i.e., p∗(y1 ≻ y2 | x) = σ(r ∗ (x, y1) − r∗ (x, y2 )). Substituting the reparameterization
-in Eq. 5 for r∗ (x, y) into the preference model Eq. 1, the partition function cancels, and we can
-express the human preference probability in terms of only the optimal policy π ∗ and reference policy
-πref . Thus, the optimal RLHF policy π∗ under the Bradley-Terry model satisfies the preference model:
-1
-p∗ (y1 ≻ y2 | x) =
- (6)
-
- π∗
-(y
-2 |x)
- π∗ (y1 |x)
- 
-1 + exp
- β log − β logπref(y2 |x) πref(y1 |x)
-The derivation is in Appendix A.2. While Eq. 6 uses the Bradley-Terry model, we can similarly
-derive expressions under the more general Plackett-Luce models [30, 21], shown in Appendix A.3.
-Now that we have the probability of human preference data in terms of the optimal policy rather than
-the reward model, we can formulate a maximum likelihood objective for a parametrized policy π
+Direct zero-shot evaluation. For direct zero-shot evaluation,
+we train DECOLA with Swin-T [39] and use Object365 data
+for Phase 1, and ImageNet-21K for Phase 2 (full dataset and
+classes). We compare to MDETR [26], GLIP [34], GroundingDINO [38], and MQ-Det [65] finetuned from GLIP and
+GroundingDINO. Table 4 shows the results. DECOLA outperforms the previous state-of-the-arts, by 12.0/17.1 APrare
+and 3.0/9.4 mAP on LVIS minival and LVIS v1.0 val, respectively. It is noteworthy that all other methods use much
+richer detection labels from GoldG data [26], a collection
+of grounding data (box and text expression pairs) curated
+by MDETR. Furthermore, other benchmark methods show
+highly imbalanced APrare and APf
+in both LVIS minival and
+LVIS v1.0 val (10-20 points gap). We hypothesize that the
+large collection of training data coincides with LVIS vocabulary, as all data follows a natural distribution of common objects.
+
+Highlight some of the key differences between the current paper and the related models MDETR, GLIP, GroudingDINO.
     """
     metadata = extract_references_from_doc_extract(
         doc,
         extract,
         anystyle_url="https://anystyle-webapp.azurewebsites.net/parse",
         semantic_scholar_api_key="WWxz8zHVUm6DWzkmw6ZSd3eA94kWbbX46Zl5jR11",
+        fuzzy_threshold=80,
     )
 
     print("Extracted titles:")
