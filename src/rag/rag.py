@@ -1,17 +1,17 @@
 import logging
+import os
 import fitz
 from llama_index.core import (
     SimpleDirectoryReader,
     VectorStoreIndex,
 )
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.cohere import Cohere
 from llama_index.embeddings.cohere import CohereEmbedding
 from llama_index.core import Settings
 from llama_index.core.memory import ChatMemoryBuffer
 import cohere
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 
 
 def is_exist_in_vector_store_index(index, pdf_file):
@@ -40,7 +40,7 @@ def setup_chat_engine(directory):
     text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=10)
 
     embed_model = CohereEmbedding(
-        cohere_api_key="97yMDC0I1r8wa2A1XRKZITRFAlPN4tndAPyZ6L8L",
+        cohere_api_key=os.getenv("COHERE_API_KEY"),
         model_name="embed-english-v3.0",  # Supports all Cohere embed models
         input_type="search_query",  # Required for v3 models
     )
@@ -48,7 +48,7 @@ def setup_chat_engine(directory):
     logging.info("Loading LLM model")
     llm_model = Cohere(
         model="command-r",
-        api_key="97yMDC0I1r8wa2A1XRKZITRFAlPN4tndAPyZ6L8L",
+        api_key=os.getenv("COHERE_API_KEY"),
         temperature=0.1,
         max_tokens=4000,
     )
@@ -101,7 +101,7 @@ Referring Paper Content:
 {full_doc_text}
 """
 
-    co = cohere.Client("MImk1OQjETu9s31ZWNlLtDfrn6bNPG9AJXpTrbfu")
+    co = cohere.Client(os.getenv("COHERE_API_KEY"))
     response = co.chat(
         message=prompt,
         model="command-r",
@@ -149,9 +149,11 @@ def improve_prompt_with_citing_context(
 
 if __name__ == "__main__":
     import sys
+
     sys.path.append(".")
     from src.refextract import extract_references_from_doc_extract
     from src.rag import ensure_pdfs_are_downloaded, chat_engine
+
     logging.basicConfig(level=logging.INFO)
 
     datadir = "src/refextract/pdf_metadata/"
@@ -179,7 +181,7 @@ Highlight some of the key differences between the current paper and the related 
         doc,
         extract,
         anystyle_url="https://anystyle-webapp.azurewebsites.net/parse",
-        semantic_scholar_api_key="WWxz8zHVUm6DWzkmw6ZSd3eA94kWbbX46Zl5jR11",
+        semantic_scholar_api_key=os.getenv("SEMANTIC_SCHOLAR_API_KEY"),
     )
 
     directory = (

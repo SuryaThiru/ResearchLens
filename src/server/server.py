@@ -88,9 +88,9 @@ def _rag_response(input):
     # get response from RAG
     response = chat_engine.chat(input)
 
-    # app.logger.info(f"Retrieved {len(response.source_nodes)} Source nodes")
+    # app.logger.debug(f"Retrieved {len(response.source_nodes)} Source nodes")
     # for src in response.source_nodes:
-    #     app.logger.info(src)
+    #     app.logger.debug(src)
 
     response = response.response
     return response
@@ -98,7 +98,7 @@ def _rag_response(input):
 
 def _cohere_response(input):
     # get response from simple cohere
-    co = cohere.Client("97yMDC0I1r8wa2A1XRKZITRFAlPN4tndAPyZ6L8L")
+    co = cohere.Client(os.getenv("COHERE_API_KEY"))
     response = co.chat(
         message=input,
         model="command-r",
@@ -112,7 +112,7 @@ def _cohere_response(input):
 def _llama_response(input):
     client = InferenceClient(
         model="https://u6al5xke1es2ir4v.us-east-1.aws.endpoints.huggingface.cloud",
-        token="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",
+        token=os.getenv("HUGGINGFACE_API_KEY"),
     )
     response = client.text_generation(input, max_new_tokens=500, temperature=0.05)
     return response
@@ -145,7 +145,7 @@ def chat():
         filepath,
         input,
         anystyle_url="https://anystyle-webapp.azurewebsites.net/parse",
-        semantic_scholar_api_key="WWxz8zHVUm6DWzkmw6ZSd3eA94kWbbX46Zl5jR11",
+        semantic_scholar_api_key=os.getenv("SEMANTIC_SCHOLAR_API_KEY"),
         request_timeout=20,
         fuzzy_threshold=80,
     )
@@ -155,6 +155,7 @@ def chat():
 
     referenced_papers = [m["title"] for m in metadata if m is not None]
 
+    # Needed for RAG
     # update vector store if it does not exist
     # for pdf in pdfs:
     #     update_vector_store_index(vectordb, pdf)
@@ -162,10 +163,11 @@ def chat():
     # citing papers
     citing_papers = [(title, pdf) for title, pdf in zip(referenced_papers, pdfs)]
 
+    # Use our GAG approach
     improved_prompt = improve_prompt_with_citing_context(
         input, citing_papers, main_paper=filepath
     )
-    app.logger.info(f"Improved prompt: {improved_prompt}")
+    app.logger.debug(f"Improved prompt: {improved_prompt}")
 
     # get response from chat LLM
     response = _chat_response(improved_prompt)

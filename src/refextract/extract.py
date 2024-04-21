@@ -223,7 +223,9 @@ def _get_metadata_of_references(
     def _search_paper_wrapper(title):
         if title is None:
             return None
-        results = sch.search_paper(title, limit=1, fields=["title", "paperId", "externalIds", "openAccessPdf"])
+        results = sch.search_paper(
+            title, limit=1, fields=["title", "paperId", "externalIds", "openAccessPdf"]
+        )
 
         if results.total == 0:
             logging.info(f'No metadata found for paper "{ref}"')
@@ -320,7 +322,7 @@ Highlight some of the key differences between the current paper and the related 
         doc,
         extract,
         anystyle_url="https://anystyle-webapp.azurewebsites.net/parse",
-        semantic_scholar_api_key="WWxz8zHVUm6DWzkmw6ZSd3eA94kWbbX46Zl5jR11",
+        semantic_scholar_api_key=os.getenv("SEMANTIC_SCHOLAR_API_KEY"),
         fuzzy_threshold=80,
     )
 

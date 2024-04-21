@@ -1,8 +1,22 @@
-# ResearchLens
+<h1 align="center">ResearchLens</h1>
 
-Your paper-reading assistant powered by LLMs.
+<p align="center">
+  <img src="/home/surya/NEU/CS5100 FAI/Project/ResearchLens/src/server/static/logo.webp" alt="Logo" width=25%>
+  <br>Your paper-reading assistant powered by LLMs.
+</p>
 
-## Installation
+ResearchLens is an innovative paper reading assistant utilizing Large Language Models (LLMs), enhanced by Retrieval Augmented Generation (RAG) and our Generation Augmented Generation (GAG) techniques, alongside advanced reference management capabilities to streamline the comprehension of complex academic literature. It also features an optional math-fine-tuned model for better explanation of mathematical content.
+
+* Document parsing with PyMuPDF, anystyle NER and Semantic Scholar API for reference extraction
+* LlamaIndex for RAG
+* Cohere command-r and math fine-tuned llama2 for generation
+* Simple flask server and chat UI
+
+![Screenshot](experiments/screenshot.png)
+
+## Setup
+
+### Python
 
 Install the required python packages using the following command:
 
@@ -10,22 +24,31 @@ Install the required python packages using the following command:
 pip install -r requirements.txt
 ```
 
-TODO: Any web dependencies?
+### Anystyle
+
+[Anystyle](https://github.com/inukshuk/anystyle) is a tool for extracting bibliographic data from unstructured text. We use a docker image to run a simple ruby server which is available in `src/server/anystyle/Dockerfile`. Specify the URL where the server is running in the appropriate modules.
+
+### Misc
+
+You have to provide your API keys for semantic scholar, huggingface and cohere to use our models. You can set the environment variables `SEMANTIC_SCHOLAR_API_KEY`, `HUGGINGFACE_API_KEY` and `COHERE_API_KEY` to the respective keys.
 
 ## Usage
 
-Coming soon.
+To use the chat app just run the `run.sh` script from the project root.
 
-## Directories
+## Modules
 
-| Directory   | Description                                                 |
-|-------------|-------------------------------------------------------------|
-| experiments | Code containing experiments                                 |
-| src         | Code for the ResearchLens application and generation engine |
-| bin         | Binaries for the application                                |
-| report      | Related documents and reports on the project                |
+| **Directory**  | **Description**                                                           |
+|----------------|---------------------------------------------------------------------------|
+| experiments    | Code containing experimental code for the project                         |
+| src/rag        | Modules for Retrieval Augmented Generation (RAG) to be used with the chat |
+| src/refextract | Modules for extracting references and downloading metadata                |
+| src/server     | UI and backend code for the chat application                              |
+| src/anystyle   | Simple ruby server for anystyle ruby library.                             |
 
-## Data
+## Contributors
 
-Coming soon.
-
+Abhishek Reddy Andluru \
+Rohit Sisir Sahoo \
+Surya Krishnamurthy \
+Venkata Sai Ujwala Bayana
